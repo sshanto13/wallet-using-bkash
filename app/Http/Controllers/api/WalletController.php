@@ -6,51 +6,35 @@ use App\Http\Controllers\Controller;
 use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
+use App\Services\BkashService;
 class WalletController extends Controller
 {
     /**
      * Bind bKash wallet (Agreement)
      */
-    public function bind(Request $request)
+    public function bind(Request $request, BkashService $bkash)
     {
         $user = $request->user();
 
-        return DB::transaction(function () use ($user) {
+        if ($user->wallet) {
+            return response()->json(['message' => 'Wallet already bound'], 409);
+        }
 
-            // Lock to prevent race condition
-            if (
-                Wallet::where('user_id', $user->id)
-                    ->lockForUpdate()
-                    ->exists()
-            ) {
-                return response()->json([
-                    'message' => 'Wallet already bound'
-                ], 409);
-            }
+        // Get Access Token
+        $bkash->getAccessToken();
 
-            /**
-             * Call bKash Agreement API here
-             * Must return:
-             * - agreementId
-             * - masked msisdn
-             */
+        // Create Agreement (Sandbox)
+        $maskedPhone = '019XXXXXXX'; // can be dynamic
+        $agreement = $bkash->createAgreement($maskedPhone);
 
-            // TEMP MOCK
-            $agreementId = 'AGMT_' . uniqid();
-            $masked = '019****123';
+        $wallet = Wallet::create([
+            'user_id' => $user->id,
+            'token' => $agreement['agreementId'] ?? 'AGMT_'.uniqid(),
+            'masked' => $agreement['customerMsisdn'] ?? $maskedPhone,
+            'balance' => 0,
+        ]);
 
-            $wallet = Wallet::create([
-                'user_id' => $user->id,
-                'token'   => $agreementId,
-                'masked' => $masked,
-                'balance' => 0,
-            ]);
-
-            return response()->json([
-                'wallet' => $wallet
-            ], 201);
-        });
+        return response()->json(['wallet' => $wallet]);
     }
 
     /**
