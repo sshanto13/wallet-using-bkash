@@ -24,5 +24,6 @@ Route::prefix('v1')->group(function () {
         Route::post('/wallet/topup', [WalletController::class, 'topUp']);
         Route::post('/wallet/refund', [WalletController::class, 'refund']);
         Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
+        Route::get('/wallet/statement', [WalletController::class, 'generate']);
     });
 });

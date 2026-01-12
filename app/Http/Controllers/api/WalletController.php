@@ -210,5 +210,66 @@ class WalletController extends Controller
             ]
         ]);
     }
+        public function generate(Request $request)
+    {
+        $user = Auth::user();
+
+        // Validate filters
+        $request->validate([
+            'from_date' => 'nullable|date',
+            'to_date' => 'nullable|date',
+            'transaction_type' => 'nullable|in:credit,debit,refund',
+        ]);
+
+        // Fetch transactions
+        $query = Transaction::whereHas('wallet', fn($q) => $q->where('user_id', $user->id));
+
+        if ($request->from_date) {
+            $query->whereDate('created_at', '>=', $request->from_date);
+        }
+
+        if ($request->to_date) {
+            $query->whereDate('created_at', '<=', $request->to_date);
+        }
+
+        if ($request->transaction_type) {
+            $query->where('type', $request->transaction_type);
+        }
+
+        $transactions = $query->orderBy('created_at', 'desc')->get();
+
+        // Build simple HTML for PDF
+        $html = view('pdf.wallet_statement', compact('transactions', 'user'))->render();
+
+        // Send to Gotenberg
+        $client = new Client([
+            'base_uri' => env('GOTENBERG_URL', 'http://127.0.0.1:3000'), // Set Gotenberg server URL
+        ]);
+
+        $response = $client->request('POST', '/forms/html', [
+            'multipart' => [
+                [
+                    'name' => 'files',
+                    'contents' => $html,
+                    'filename' => 'statement.html',
+                ],
+            ],
+            'headers' => [
+                'Accept' => 'application/pdf',
+            ],
+        ]);
+
+        $pdfContent = $response->getBody()->getContents();
+
+        // Store PDF temporarily
+        $filename = 'wallet_statement_' . now()->format('Ymd_His') . '.pdf';
+        Storage::put('public/' . $filename, $pdfContent);
+
+        // Return download URL
+        return response()->json([
+            'url' => asset('storage/' . $filename)
+        ]);
+    }
+
 
 }
