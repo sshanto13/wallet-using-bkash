@@ -27,7 +27,13 @@ return [
     'resend' => [
         'key' => env('RESEND_KEY'),
     ],
-
+    'bkash' => [
+        'base_url'  => env('BKASH_SANDBOX_BASE_URL'),
+        'app_key'   => env('BKASH_APP_KEY'),
+        'app_secret'=> env('BKASH_APP_SECRET'),
+        'username'  => env('BKASH_USERNAME'),
+        'password'  => env('BKASH_PASSWORD'),
+    ],
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
