@@ -28,11 +28,12 @@ return [
         'key' => env('RESEND_KEY'),
     ],
     'bkash' => [
-        'base_url'  => env('BKASH_SANDBOX_BASE_URL'),
-        'app_key'   => env('BKASH_APP_KEY'),
-        'app_secret'=> env('BKASH_APP_SECRET'),
-        'username'  => env('BKASH_USERNAME'),
-        'password'  => env('BKASH_PASSWORD'),
+        'base_url'  => env('BKASH_SANDBOX_BASE_URL', 'https://tokenized.sandbox.bka.sh/v1.2.0-beta'),
+        'checkout_base_url' => env('BKASH_CHECKOUT_BASE_URL', 'https://checkout.sandbox.bka.sh/v1.2.0-beta'),
+        'app_key'   => env('BKASH_SANDBOX_APP_KEY'),
+        'app_secret'=> env('BKASH_SANDBOX_APP_SECRET'),
+        'username'  => env('BKASH_SANDBOX_USERNAME'),
+        'password'  => env('BKASH_SANDBOX_PASSWORD'),
     ],
     'slack' => [
         'notifications' => [

@@ -14,14 +14,17 @@ Route::prefix('v1')->group(function () {
     // USER
   
     
-    // call ;back 
+    // bKash callbacks
     Route::get('/bkash/agreement/callback',[BkashCallbackController::class, 'agreementCallback'])->name('bkash.agreement.callback');
+    Route::get('/bkash/payment/callback',[BkashCallbackController::class, 'paymentCallback'])->name('bkash.payment.callback');
 
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/wallet/bind', [WalletController::class, 'bind']);
         Route::get('/wallet', [WalletController::class, 'me']);
         Route::post('/wallet/topup', [WalletController::class, 'topUp']);
+        Route::post('/wallet/payment/check', [WalletController::class, 'checkPaymentStatus']);
         Route::post('/wallet/refund', [WalletController::class, 'refund']);
         Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
         Route::get('/wallet/statement', [WalletController::class, 'generate']);
