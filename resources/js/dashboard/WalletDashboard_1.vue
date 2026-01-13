@@ -43,7 +43,7 @@
         </div>
       </div>
 
-    <!-- Login/Registration Form -->
+    <!-- Login Form -->
       <div v-if="!isLoggedIn" class="max-w-md mx-auto">
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl">
           <div class="text-center mb-6">
@@ -53,33 +53,31 @@
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
               </svg>
             </div>
-            <h2 class="text-2xl font-bold text-white mb-2">{{ showRegisterForm ? t('auth.register') : t('app.welcome') }}</h2>
-            <p class="text-gray-400 text-sm">{{ showRegisterForm ? t('auth.sign_up') : t('app.sign_in') }}</p>
+            <h2 class="text-2xl font-bold text-white mb-2">{{ t('app.welcome') }}</h2>
+            <p class="text-gray-400 text-sm">{{ t('app.sign_in') }}</p>
           </div>
-
-          <!-- Login Form -->
-          <form v-if="!showRegisterForm" @submit.prevent="login" class="space-y-4">
+          <form @submit.prevent="login" class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-300 mb-2">{{ t('auth.email') }}</label>
-              <input
-                v-model="loginForm.email"
-                type="email"
+      <input
+        v-model="loginForm.email"
+        type="email"
                 :placeholder="t('auth.email')"
                 required
                 class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              />
+      />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-300 mb-2">{{ t('auth.password') }}</label>
-              <input
-                v-model="loginForm.password"
-                type="password"
+      <input
+        v-model="loginForm.password"
+        type="password"
                 :placeholder="t('auth.password')"
                 required
                 class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              />
+      />
             </div>
-            <button
+      <button
               type="submit"
               :disabled="loading"
               class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
@@ -92,105 +90,10 @@
                 {{ t('auth.logging_in') }}
               </span>
               <span v-else>{{ t('auth.login') }}</span>
-            </button>
+      </button>
             <p v-if="error" class="text-red-400 text-sm text-center mt-2 bg-red-500/10 border border-red-500/20 rounded-lg p-2">{{ error }}</p>
-            <div class="text-center mt-4">
-              <p class="text-gray-400 text-sm">
-                {{ t('auth.dont_have_account') }}
-                <button
-                  type="button"
-                  @click="switchToRegister"
-                  class="text-purple-400 hover:text-purple-300 font-medium underline"
-                >
-                  {{ t('auth.sign_up') }}
-                </button>
-              </p>
-            </div>
           </form>
-
-          <!-- Registration Form -->
-          <form v-else @submit.prevent="register" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">{{ t('auth.name') }}</label>
-              <input
-                v-model="registerForm.name"
-                type="text"
-                :placeholder="t('auth.name')"
-                required
-                class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">{{ t('auth.email') }}</label>
-              <input
-                v-model="registerForm.email"
-                type="email"
-                :placeholder="t('auth.email')"
-                required
-                class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">{{ t('auth.phone') }}</label>
-              <input
-                v-model="registerForm.phone"
-                type="tel"
-                :placeholder="t('auth.phone')"
-                required
-                class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">{{ t('auth.password') }}</label>
-              <input
-                v-model="registerForm.password"
-                type="password"
-                :placeholder="t('auth.password')"
-                required
-                minlength="6"
-                class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">{{ t('auth.confirm_password') }}</label>
-              <input
-                v-model="registerForm.password_confirmation"
-                type="password"
-                :placeholder="t('auth.confirm_password')"
-                required
-                minlength="6"
-                class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              />
-            </div>
-            <button
-              type="submit"
-              :disabled="loading"
-              class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              <span v-if="loading" class="flex items-center justify-center gap-2">
-                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {{ t('auth.registering') }}
-              </span>
-              <span v-else>{{ t('auth.register') }}</span>
-            </button>
-            <p v-if="error" class="text-red-400 text-sm text-center mt-2 bg-red-500/10 border border-red-500/20 rounded-lg p-2">{{ error }}</p>
-            <div class="text-center mt-4">
-              <p class="text-gray-400 text-sm">
-                {{ t('auth.already_have_account') }}
-                <button
-                  type="button"
-                  @click="switchToLogin"
-                  class="text-purple-400 hover:text-purple-300 font-medium underline"
-                >
-                  {{ t('auth.sign_in') }}
-                </button>
-              </p>
-            </div>
-          </form>
-        </div>
+    </div>
       </div>
 
       <!-- Wallet Dashboard (Authenticated) -->
@@ -602,10 +505,8 @@ export default {
   name: 'WalletDashboard',
   data() {
     return {
-      // Login/Registration
-      showRegisterForm: false,
+      // Login
       loginForm: { email: '', password: '' },
-      registerForm: { name: '', email: '', phone: '', password: '', password_confirmation: '' },
       isLoggedIn: false,
       user: null,
       loading: false,
@@ -654,9 +555,7 @@ export default {
   },
   mounted() {
     this.checkAuth();
-    // Ensure English is the default language
-    const currentLang = i18n.getLanguage();
-    this.currentLanguage = (currentLang === 'en' || currentLang === 'bn') ? currentLang : 'en';
+    this.currentLanguage = i18n.getLanguage();
     
     // Listen for language changes
     window.addEventListener('languageChanged', this.handleLanguageChange);
@@ -664,19 +563,8 @@ export default {
     // Listen for wallet binding success from popup
     window.addEventListener('message', this.handleWalletBindingMessage);
     
-    // Ensure translations are loaded (English will be loaded first)
-    if (!i18n.hasTranslations('en')) {
-      i18n.loadTranslations('en').catch(err => {
-        console.warn('Failed to load English translations:', err);
-      });
-    }
-    
-    // Load current language translations if different from English
-    if (this.currentLanguage !== 'en' && !i18n.hasTranslations(this.currentLanguage)) {
-      i18n.loadTranslations(this.currentLanguage).catch(err => {
-        console.warn('Failed to load current language translations:', err);
-      });
-    }
+    // Load translations on mount
+    i18n.loadTranslations();
   },
   beforeUnmount() {
     window.removeEventListener('languageChanged', this.handleLanguageChange);
@@ -723,18 +611,6 @@ export default {
     },
 
     // Authentication
-    switchToRegister() {
-      this.showRegisterForm = true;
-      this.error = '';
-      this.registerForm = { name: '', email: '', phone: '', password: '', password_confirmation: '' };
-    },
-    
-    switchToLogin() {
-      this.showRegisterForm = false;
-      this.error = '';
-      this.loginForm = { email: '', password: '' };
-    },
-    
     async checkAuth() {
       const token = localStorage.getItem('auth_token');
       const userStr = localStorage.getItem('user');
@@ -774,53 +650,6 @@ export default {
       } catch (err) {
         console.error('Login error:', err);
         this.error = err.response?.data?.message || this.t('auth.login_failed');
-        this.showToast(this.error, 'error');
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async register() {
-      try {
-        this.error = '';
-        this.loading = true;
-
-        // Validate password confirmation
-        if (this.registerForm.password !== this.registerForm.password_confirmation) {
-          this.error = this.t('auth.password_mismatch');
-          this.showToast(this.error, 'error');
-          this.loading = false;
-          return;
-        }
-
-        const response = await api.post('/register', this.registerForm);
-
-        if (response.data.token) {
-          localStorage.setItem('auth_token', response.data.token);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
-          this.user = response.data.user;
-          this.isLoggedIn = true;
-
-          this.showToast(this.t('auth.registration_successful'), 'success');
-
-          // Reset registration form
-          this.registerForm = { name: '', email: '', phone: '', password: '', password_confirmation: '' };
-          this.showRegisterForm = false;
-
-          // Fetch wallet and transactions
-          await this.fetchWallet();
-          await this.fetchTransactions();
-        }
-      } catch (err) {
-        console.error('Registration error:', err);
-        // Handle validation errors
-        if (err.response?.data?.errors) {
-          const errors = err.response.data.errors;
-          const errorMessages = Object.values(errors).flat().join(', ');
-          this.error = errorMessages;
-        } else {
-          this.error = err.response?.data?.message || this.t('auth.registration_failed');
-        }
         this.showToast(this.error, 'error');
       } finally {
         this.loading = false;

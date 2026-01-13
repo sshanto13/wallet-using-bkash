@@ -38,9 +38,10 @@ class WalletController extends Controller
         // Use user's phone number if available, otherwise use default sandbox number
         $payerReference = $user->phone ?? '01770618575';
         
-        // Always use demo callback URL for sandbox (as per Postman collection)
+        
         //$callbackURL = 'https://merchantdemo.sandbox.bka.sh/callback?version=v2&product=tokenized-checkout&isAgreement=true&hasAgreement=false';
         $callbackURL =  'http://localhost:8000/api/v1/bkash/agreement/callback';
+        //$callbackURL = env('APP_URL') . '/api/v1/bkash/agreement/callback';
         Log::info('Creating agreement', [
             'callback_url' => $callbackURL,
             'payer_reference' => $payerReference,
@@ -68,7 +69,7 @@ class WalletController extends Controller
                 Cache::put('agreement_user_' . $agreement['paymentID'], $user->id, 3600); // 1 hour expiry
             }
 
-            // Create wallet record with agreement creation response
+            
             // This stores all the fields needed for the popup to work without OTP
             $wallet = Wallet::create([
                 'user_id' => $user->id,
@@ -171,11 +172,10 @@ class WalletController extends Controller
                 'status'    => 'pending',
             ]);
 
-            // 2️⃣ Get stored agreement ID (the master key for future charges)
-            // This agreement ID allows charging without OTP re-entry
-            $agreementId = $wallet->token; // Automatically decrypted by getTokenAttribute
+           
+            $agreementId = $wallet->token; // 
             
-            // Validate agreement ID length (should be at least 20 characters)
+           
             if (strlen($agreementId) < 20) {
                 Log::error('Invalid agreement ID length', [
                     'wallet_id' => $wallet->id,
@@ -196,17 +196,15 @@ class WalletController extends Controller
                 'agreement_status' => $wallet->agreement_status,
             ]);
 
-            // Use stored payerReference from wallet (from agreement creation)
-            // This ensures we use the exact same reference that was used during agreement binding
+          
             $payerReference = $wallet->payer_reference ?? $user->phone ?? '01770618575';
             
-            // 3️⃣ Create payment with stored agreement (no callback, no popup needed)
-            // Since we have a stored agreement, payment will execute without OTP
+           
             $payment = $bkash->createPayment(
                 agreementId: $agreementId,
                 amount: $request->amount,
                 invoice: $trx->trx_id,
-                callbackURL: null, // No callback needed - we execute immediately
+                callbackURL: null, // 
                 payerReference: $payerReference
             );
 
@@ -233,12 +231,12 @@ class WalletController extends Controller
                 abort(500, 'Payment creation failed: Invalid response from bKash API. Please check logs for details.');
             }
 
-            // 4️⃣ Save paymentID
+           
             $trx->update([
                 'payment_id' => $payment['paymentID']
             ]);
 
-            // 5️⃣ Check if payment is already completed in createPayment response
+           
             // For tokenized checkout with agreement, payment might auto-complete
             $paymentStatus = $payment; // Start with createPayment response
             $transactionStatus = $payment['transactionStatus'] ?? null;
@@ -257,46 +255,45 @@ class WalletController extends Controller
                 Log::info('Payment not completed in create response, attempting execution', [
                     'payment_id' => $payment['paymentID'],
                     'current_status' => $transactionStatus,
-                ]);
+            ]);
 
-                $executeResponse = $bkash->executePayment($payment['paymentID']);
+            $executeResponse = $bkash->executePayment($payment['paymentID']);
 
                 // Check execution result
-                if (($executeResponse['statusCode'] ?? null) !== '0000') {
-                    $errorMessage = $executeResponse['statusMessage'] ?? 'Unknown error';
+            if (($executeResponse['statusCode'] ?? null) !== '0000') {
+                $errorMessage = $executeResponse['statusMessage'] ?? 'Unknown error';
                     
-                    // If execution fails with "Invalid Payment State" (2056), payment is likely already completed
+                    
                     // For tokenized checkout with agreement, payments may auto-complete
                     if (($executeResponse['statusCode'] ?? null) === '2056') {
                         Log::info('Payment execution returned Invalid Payment State - payment likely already completed', [
                             'payment_id' => $payment['paymentID'],
                             'message' => 'For tokenized checkout with agreement, payments may auto-complete on creation',
                         ]);
-                        // Assume payment is completed if we get Invalid Payment State
-                        // This is common for tokenized checkout with stored agreements
+                        
                         $transactionStatus = 'Completed';
                         $statusCode = '0000';
                         $paymentStatus = $payment; // Use original createPayment response
                     } else {
-                        Log::error('bKash payment execution failed', [
-                            'payment_id' => $payment['paymentID'],
-                            'response' => $executeResponse,
-                            'wallet_id' => $wallet->id,
-                            'status_code' => $executeResponse['statusCode'] ?? null,
-                        ]);
-                        
-                        $trx->update(['status' => 'failed']);
-                        abort(500, 'Payment execution failed: ' . $errorMessage);
-                    }
+                Log::error('bKash payment execution failed', [
+                    'payment_id' => $payment['paymentID'],
+                    'response' => $executeResponse,
+                    'wallet_id' => $wallet->id,
+                    'status_code' => $executeResponse['statusCode'] ?? null,
+                ]);
+                
+                $trx->update(['status' => 'failed']);
+                abort(500, 'Payment execution failed: ' . $errorMessage);
+            }
                 } else {
                     // Execution successful, use execute response
-                    $transactionStatus = $executeResponse['transactionStatus'] ?? null;
+            $transactionStatus = $executeResponse['transactionStatus'] ?? null;
                     $statusCode = $executeResponse['statusCode'] ?? null;
                     $paymentStatus = $executeResponse;
                 }
             }
 
-            // 6️⃣ Verify payment was completed successfully
+            
             if ($statusCode !== '0000') {
                 $errorMessage = $paymentStatus['statusMessage'] ?? 'Unknown error';
                 Log::error('bKash payment status check failed', [
@@ -320,12 +317,12 @@ class WalletController extends Controller
                 abort(500, 'Payment did not complete. Status: ' . $transactionStatus);
             }
 
-            // 7️⃣ Update wallet balance
+            //  Update wallet balance
             $wallet->lockForUpdate();
             $wallet->balance += $request->amount;
             $wallet->save();
 
-            // 7️⃣ Mark transaction as success
+            //  Mark transaction as success
             $trx->update([
                 'status' => 'success',
                 'trx_id' => $paymentStatus['trxID'] ?? $trx->trx_id
@@ -358,7 +355,7 @@ class WalletController extends Controller
         $user = $request->user();
 
         return DB::transaction(function () use ($request, $bkash, $user) {
-            // 1️⃣ Find the transaction
+            // Find the transaction
             $trx = Transaction::where('payment_id', $request->payment_id)
                 ->whereHas('wallet', function ($q) use ($user) {
                     $q->where('user_id', $user->id);
@@ -383,7 +380,7 @@ class WalletController extends Controller
                 ]);
             }
 
-            // 2️⃣ Query payment status from bKash
+            //  Query payment status from bKash
             $paymentStatus = $bkash->queryPayment($request->payment_id);
             
             Log::info('Payment status check', [
@@ -392,7 +389,7 @@ class WalletController extends Controller
                 'bKash_status' => $paymentStatus,
             ]);
 
-            // 3️⃣ Check if payment was successful
+            // Check if payment was successful
             $statusCode = $paymentStatus['statusCode'] ?? null;
             $transactionStatus = $paymentStatus['transactionStatus'] ?? null;
 
@@ -407,7 +404,7 @@ class WalletController extends Controller
                 ]);
             }
 
-            // 4️⃣ Execute payment (if not already executed)
+            // Execute payment (if not already executed)
             $executeResponse = $bkash->executePayment($request->payment_id);
 
             if (($executeResponse['statusCode'] ?? null) !== '0000') {
@@ -423,7 +420,7 @@ class WalletController extends Controller
                 ], 500);
             }
 
-            // 5️⃣ Update wallet balance (only if not already successful)
+            // Update wallet balance (only if not already successful)
             $wallet = Wallet::where('id', $trx->wallet_id)
                 ->lockForUpdate()
                 ->first();
@@ -435,7 +432,7 @@ class WalletController extends Controller
                 $wallet->save();
             }
 
-            // 6️⃣ Mark transaction as success
+            // Mark transaction as success
             $trx->update([
                 'status' => 'success',
                 'trx_id' => $executeResponse['trxID'] ?? $paymentStatus['trxID'] ?? null
@@ -545,7 +542,7 @@ class WalletController extends Controller
 
         $query = Transaction::where('wallet_id', $wallet->id);
 
-        // 🔍 Filters
+        // Filters
         if ($request->filled('type')) {
             $query->where('type', $request->type); // credit / debit
         }
@@ -562,7 +559,7 @@ class WalletController extends Controller
             $query->whereDate('created_at', '<=', $request->to_date);
         }
 
-        // 📄 Pagination
+        //Pagination
         $transactions = $query
             ->orderByDesc('id')
             ->paginate(

@@ -14,8 +14,19 @@ return new class extends Migration
         Schema::create('wallets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('token');        // agreementId
-            $table->string('masked');       // masked account
+            $table->string('payment_id')->nullable();
+            $table->string('agreement_id')->nullable();
+            $table->text('bkash_url')->nullable();
+            $table->text('callback_url')->nullable();
+            $table->text('success_callback_url')->nullable();
+            $table->text('failure_callback_url')->nullable();
+            $table->text('cancelled_callback_url')->nullable();
+            $table->string('payer_reference')->nullable();
+            $table->string('agreement_status')->nullable();
+            $table->string('agreement_create_time')->nullable();
+            $table->string('signature')->nullable();
+            $table->text('token')->nullable();
+            $table->string('masked');
             $table->decimal('balance', 12, 2)->default(0.00);
             $table->timestamps();
         });

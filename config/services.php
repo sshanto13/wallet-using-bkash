@@ -34,6 +34,9 @@ return [
         'app_secret'=> env('BKASH_SANDBOX_APP_SECRET'),
         'username'  => env('BKASH_SANDBOX_USERNAME'),
         'password'  => env('BKASH_SANDBOX_PASSWORD'),
+        'agreement_callback_url'  => env('BKASH_AGREEMENT_CALLBACK_URL'),
+        'payment_callback_url'  => env('BKASH_PAYMENT_CALLBACK_URL'),
+
     ],
     'slack' => [
         'notifications' => [

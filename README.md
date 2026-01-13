@@ -1,66 +1,559 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Wallet Integration Architecture
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A resilient wallet system using bKash Tokenized Checkout with Laravel backend and Vue.js frontend.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- ✅ **Secure Authentication** - Laravel Sanctum API authentication
+- ✅ **User Registration & Login** - Complete authentication system with registration form
+- ✅ **i18n Support** - English and Bangla language support with persistence
+- ✅ **Agreement Binding** - Create and store encrypted bKash agreements
+- ✅ **Balance Injection** - Add balance with Redis atomic locks to prevent double-submissions
+- ✅ **Refund Logic** - Partial refund support with transaction tracking
+- ✅ **Transaction History** - Paginated transaction history with Vue.js
+- ✅ **Beautiful UI** - Modern, responsive design with Tailwind CSS
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Backend**: Laravel 11 (PHP 8.2+)
+- **Frontend**: Vue.js 3
+- **Styling**: Tailwind CSS
+- **Database**: MySQL 8.0
+- **Cache/Locks**: Redis (optional, can use file cache)
+- **Authentication**: Laravel Sanctum
+- **Build Tool**: Vite
 
-## Learning Laravel
+## Architecture Decisions
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 1. Authentication & Security
+- **Laravel Sanctum** for API token authentication
+- Wallet agreement tokens are **encrypted at rest** using Laravel's Crypt facade
+- User-scoped wallet operations ensure data isolation
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 2. Atomic Transactions & Idempotency
+- **Redis locks** using Laravel's Cache::lock() to prevent double-submissions (optional)
+- Database transactions ensure atomicity for balance updates
+- Payment operations are locked per user during processing
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 3. Localization
+- Laravel's built-in localization system with JSON files
+- Language preference stored in user model and localStorage
+- Supports English (en) and Bangla (bn)
+- Default language is English
 
-## Laravel Sponsors
+### 4. Frontend Architecture
+- **Vue.js 3** with Composition API
+- **Axios** for API communication
+- **i18n Service** for translations
+- **Responsive Design** with Tailwind CSS
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Installation
 
-### Premium Partners
+### Prerequisites
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+- PHP 8.2 or higher
+- Composer
+- Node.js 18+ and npm
+- MySQL 8.0
+- Redis (optional, for distributed locks - can use file cache instead)
 
-## Contributing
+### Step 1: Clone the Repository
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+git clone <your-repository-url>
+cd bkash_wallet-main
+```
 
-## Code of Conduct
+### Step 2: Install PHP Dependencies
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+composer install
+```
 
-## Security Vulnerabilities
+### Step 3: Environment Configuration
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Copy `.env.example` to `.env` and configure:
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+Update `.env` with your database and bKash credentials:
+
+```env
+APP_NAME=Laravel
+APP_ENV=local
+APP_KEY=base64:mk6NWc6cpD5pa74CdE0SZNCheGwvii8ZKJzJ/cC7GIA=
+APP_DEBUG=true
+APP_TIMEZONE=UTC
+APP_URL=http://127.0.0.1:8000/
+SESSION_DOMAIN=127.0.0.1
+SANCTUM_STATEFUL_DOMAINS=127.0.0.1,localhost
+
+
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
+
+APP_MAINTENANCE_DRIVER=file
+# APP_MAINTENANCE_STORE=database
+
+PHP_CLI_SERVER_WORKERS=4
+
+BCRYPT_ROUNDS=12
+
+LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=debug
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=wallet_using_bkash
+DB_USERNAME=root
+DB_PASSWORD=
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+
+CACHE_STORE=database
+CACHE_PREFIX=
+
+MEMCACHED_HOST=127.0.0.1
+
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=log
+MAIL_SCHEME=null
+MAIL_HOST=127.0.0.1
+MAIL_PORT=2525
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+AWS_USE_PATH_STYLE_ENDPOINT=false
+#bkash sandbox integration by suman
+BKASH_SANDBOX_BASE_URL=https://tokenized.sandbox.bka.sh/v1.2.0-beta
+BKASH_AGREEMENT_CALLBACK_URL=http://localhost:8000/api/v1/bkash/agreement/callback
+BKASH_PAYMENT_CALLBACK_URL=http://localhost:8000/api/v1/bkash/payment/callback
+BKASH_SANDBOX_APP_KEY=4f6o0cjiki2rfm34kfdadl1eqq
+BKASH_SANDBOX_APP_SECRET=2is7hdktrekvrbljjh44ll3d9l1dtjo4pasmjvs5vl5qr3fug4b
+BKASH_SANDBOX_USERNAME=sandboxTokenizedUser02
+BKASH_SANDBOX_PASSWORD=sandboxTokenizedUser02@12345
+BKASH_USE_DEMO_CALLBACK=true
+#BKASH_SANDBOX_MERCHANT_NO=your_merchant_no
+
+VITE_APP_NAME="${APP_NAME}"
+
+GOTENBERG_URL=http://127.0.0.1:3000
+CACHE_DRIVER=redis
+REDIS_CLIENT=phpredis
+```
+
+### Step 4: Database Setup
+
+```bash
+# Create database
+mysql -u root -p -e "CREATE DATABASE wallet_system;"
+
+# Or using MySQL command line:
+mysql -u root -p
+CREATE DATABASE wallet_system;
+EXIT;
+```
+
+### Step 5: Run Migrations
+
+```bash
+# Run all migrations
+php artisan migrate
+
+# Or with fresh database (drops all tables and re-runs migrations)
+php artisan migrate:fresh
+```
+
+### Step 6: Run Seeders
+
+```bash
+# Run database seeders to create test user
+php artisan db:seed
+
+# Or run specific seeder
+php artisan db:seed --class=UserSeeder
+```
+
+**Default Test User Credentials:**
+- Email: `test@example.com`
+- Password: `password123`
+- Phone: `01952499680`
+
+**Note:** You can also register a new user through the registration form on the login page.
+
+### Step 7: Install Node Dependencies
+
+```bash
+npm install
+```
+
+### Step 8: Build Frontend Assets
+
+```bash
+# Development mode (with hot reload)
+npm run dev
+
+# Production build
+npm run build
+```
+
+### Step 9: Start Laravel Server
+
+```bash
+# In a new terminal
+php artisan serve
+```
+
+The application will be available at `http://localhost:8000`
+
+### Step 10: Access the Application
+
+1. Open your browser and navigate to `http://localhost:8000`
+2. You'll see the login page with demo credentials displayed
+3. Use the credentials shown on the page or register a new account
+
+## Database Migrations
+
+The following migrations are included:
+
+1. `0001_01_01_000000_create_users_table.php` - Creates users table
+2. `0001_01_01_000001_create_cache_table.php` - Creates cache table
+3. `0001_01_01_000002_create_jobs_table.php` - Creates jobs table
+4. `2026_01_11_181603_create_wallets_table.php` - Creates wallets table
+5. `2026_01_11_181703_create_transactions_table.php` - Creates transactions table
+6. `2026_01_11_183118_create_personal_access_tokens_table.php` - Creates personal access tokens table (for Sanctum)
+7. `2026_01_13_100132_add_agreement_fields_to_wallets_table.php` - Adds agreement fields to wallets table
+
+## Database Seeders
+
+### UserSeeder
+
+Creates a default test user:
+- **Name**: Test User
+- **Email**: test@example.com
+- **Phone**: 01952499680
+- **Password**: password123
+
+To run seeders:
+```bash
+php artisan db:seed
+```
+
+## API Endpoints
+
+### Authentication (Public)
+- `POST /api/v1/register` - Register new user
+  - Body: `{ "name": "string", "email": "string", "phone": "string", "password": "string", "password_confirmation": "string" }`
+- `POST /api/v1/login` - Login user
+  - Body: `{ "email": "string", "password": "string" }`
+
+### Authentication (Protected)
+- `POST /api/v1/logout` - Logout user (requires auth)
+
+### Language (Public)
+- `GET /api/v1/language/{lang}` - Get translations for a language (en/bn)
+
+### Language (Protected)
+- `POST /api/v1/language/preference` - Save language preference (requires auth)
+- `GET /api/v1/language/preference` - Get user's language preference (requires auth)
+
+### Wallet (Protected)
+- `GET /api/v1/wallet` - Get wallet information (requires auth)
+- `POST /api/v1/wallet/bind` - Create bKash agreement/bind wallet (requires auth)
+- `POST /api/v1/wallet/topup` - Add balance to wallet (requires auth)
+  - Body: `{ "amount": number }`
+- `POST /api/v1/wallet/payment/check` - Check payment status (requires auth)
+  - Body: `{ "payment_id": "string" }`
+- `POST /api/v1/wallet/refund` - Process refund (requires auth)
+  - Body: `{ "transaction_id": number, "amount": number, "reason": "string" }`
+- `GET /api/v1/wallet/transactions` - Get transaction history (requires auth)
+  - Query params: `page`, `per_page`, `type`, `status`, `from_date`, `to_date`
+- `GET /api/v1/wallet/statement` - Generate wallet statement (requires auth)
+
+### bKash Callbacks (Public)
+- `GET /api/v1/bkash/agreement/callback` - bKash agreement callback
+- `GET /api/v1/bkash/payment/callback` - bKash payment callback
+
+## Usage Flow
+
+### 1. User Registration/Login
+- Register a new account through the registration form
+- Or login with existing credentials
+- Demo credentials are displayed on the login page:
+  - Username: `suman.fintech@gmail.com`
+  - Password: `123456`
+- Language preference is stored and persisted
+
+### 2. Create Agreement (Bind Wallet)
+- Click "Bind Wallet" button
+- System creates bKash agreement
+- User completes OTP/PIN verification on bKash popup
+- Agreement ID is encrypted and stored in database
+- Wallet status becomes "Active"
+
+### 3. Add Balance (Top Up)
+- Enter amount to add (minimum 10 BDT)
+- Click "Top Up" button
+- System creates payment with stored agreement (no OTP needed)
+- Redis/file lock prevents double-submissions
+- Balance is updated atomically on success
+- Transaction is recorded in history
+
+### 4. View Transactions
+- View paginated transaction history
+- Filter by type (credit/debit/refund) and status (pending/success/failed)
+- Filter by date range
+- View transaction details including payment ID, amount, status, and date
+
+### 5. Process Refund
+- Select a successful credit transaction
+- Click "Refund" button
+- Enter refund amount (partial refunds supported)
+- Provide refund reason
+- System processes refund and updates balance
+- Refund transaction is recorded
+
+## Testing with bKash Sandbox
+
+### Whitelisted Phone Numbers
+- 01929918378
+- 01619777283
+- 01619777282
+- 01823074817
+- 01770618575
+- 01952499680
+
+### Test Credentials
+- **OTP**: 123456
+- **PIN**: 12121
+
+### Important Notes
+- Only whitelisted phone numbers work in sandbox
+- Use the phone number during wallet binding
+- OTP and PIN are fixed for sandbox testing
+
+## Project Structure
+
+```
+bkash_wallet-main/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── api/
+│   │   │   │   ├── AuthController.php
+│   │   │   │   ├── BkashCallbackController.php
+│   │   │   │   ├── LanguageController.php
+│   │   │   │   └── WalletController.php
+│   │   │   └── Controller.php
+│   │   └── Middleware/
+│   │       └── SetLocale.php
+│   ├── Models/
+│   │   ├── Transaction.php
+│   │   ├── User.php
+│   │   └── Wallet.php
+│   ├── Providers/
+│   │   └── AppServiceProvider.php
+│   └── Services/
+│       ├── BkashService.php
+│       └── BkashService_1.php
+├── bootstrap/
+│   ├── app.php
+│   ├── cache/
+│   └── providers.php
+├── config/
+│   ├── app.php
+│   ├── auth.php
+│   ├── cache.php
+│   ├── cors.php
+│   ├── database.php
+│   ├── filesystems.php
+│   ├── logging.php
+│   ├── mail.php
+│   ├── queue.php
+│   ├── sanctum.php
+│   ├── services.php
+│   └── session.php
+├── database/
+│   ├── factories/
+│   │   └── UserFactory.php
+│   ├── migrations/
+│   │   ├── 0001_01_01_000000_create_users_table.php
+│   │   ├── 0001_01_01_000001_create_cache_table.php
+│   │   ├── 0001_01_01_000002_create_jobs_table.php
+│   │   ├── 2026_01_11_181603_create_wallets_table.php
+│   │   ├── 2026_01_11_181703_create_transactions_table.php
+│   │   ├── 2026_01_11_183118_create_personal_access_tokens_table.php
+│   │   └── 2026_01_13_100132_add_agreement_fields_to_wallets_table.php
+│   └── seeders/
+│       ├── DatabaseSeeder.php
+│       └── UserSeeder.php
+├── lang/
+│   ├── en.json
+│   └── bn.json
+├── public/
+│   ├── index.php
+│   ├── favicon.ico
+│   └── robots.txt
+├── resources/
+│   ├── css/
+│   │   └── app.css
+│   ├── js/
+│   │   ├── app.js
+│   │   ├── bootstrap.js
+│   │   ├── components/
+│   │   │   └── LanguageSwitcher.vue
+│   │   ├── dashboard/
+│   │   │   └── WalletDashboard.vue
+│   │   └── services/
+│   │       ├── api.js
+│   │       └── i18n.js
+│   └── views/
+│       ├── bkash/
+│       │   ├── callback-error.blade.php
+│       │   └── callback-success.blade.php
+│       ├── wallet.blade.php
+│       └── welcome.blade.php
+├── routes/
+│   ├── api.php
+│   ├── console.php
+│   └── web.php
+├── storage/
+│   ├── app/
+│   ├── framework/
+│   └── logs/
+├── tests/
+│   ├── Feature/
+│   ├── Unit/
+│   └── TestCase.php
+├── .env.example
+├── .gitignore
+├── artisan
+├── composer.json
+├── composer.lock
+├── package.json
+├── package-lock.json
+├── phpunit.xml
+├── postcss.config.js
+├── tailwind.config.js
+├── vite.config.js
+└── README_SUMAN.md
+```
+
+## Security Considerations
+
+1. **Encryption**: Agreement tokens are encrypted at rest using Laravel's encryption
+2. **Atomic Locks**: Redis/file locks prevent race conditions in payment processing
+3. **User Scoping**: All wallet operations are scoped to authenticated user
+4. **Input Validation**: All API endpoints validate input data
+5. **CSRF Protection**: Laravel's built-in CSRF protection for web routes
+6. **Token Authentication**: Laravel Sanctum for secure API authentication
+
+## Error Handling
+
+- API errors return JSON responses with appropriate HTTP status codes
+- Frontend displays user-friendly error messages via toast notifications
+- Server-side logging for debugging (Laravel logs in `storage/logs/`)
+
+## Troubleshooting
+
+### Issue: Callback URL Error
+- **Problem**: "Invalid Merchant Callback URL" error
+- **Solution**: 
+  1. Set `BKASH_CALLBACK_URL` in `.env` with full absolute URL
+  2. For production, use `https://yourdomain.com/api/v1/bkash/agreement/callback`
+  3. For local development, use ngrok or similar tool to expose localhost
+  4. Run `php artisan config:clear` after updating `.env`
+
+### Issue: Translations Not Working
+- **Problem**: Text shows as keys instead of translations
+- **Solution**: 
+  1. Ensure `lang/en.json` and `lang/bn.json` exist
+  2. Clear browser cache
+  3. Check browser console for errors
+  4. Default language is English - should work without changing language
+
+### Issue: Database Connection Error
+- **Problem**: Cannot connect to database
+- **Solution**:
+  1. Check database credentials in `.env`
+  2. Ensure MySQL is running
+  3. Verify database exists: `mysql -u root -p -e "SHOW DATABASES;"`
+  4. Run migrations: `php artisan migrate`
+
+### Issue: Frontend Not Loading
+- **Problem**: Blank page or JavaScript errors
+- **Solution**:
+  1. Run `npm install` to install dependencies
+  2. Run `npm run build` to build assets
+  3. Or run `npm run dev` for development with hot reload
+  4. Clear browser cache
+
+## Development Commands
+
+```bash
+# Start Laravel development server
+php artisan serve
+
+# Start Vite dev server (for hot reload)
+npm run dev
+
+# Build production assets
+npm run build
+
+# Run migrations
+php artisan migrate
+
+# Run seeders
+php artisan db:seed
+
+# Clear cache
+php artisan cache:clear
+php artisan config:clear
+php artisan view:clear
+
+# Run tests
+php artisan test
+```
+
+## Future Enhancements
+
+- Webhook support for bKash callbacks
+- Automated reconciliation jobs
+- Transaction export (CSV/Excel)
+- Multi-currency support
+- Admin dashboard
+- Email notifications
+- SMS notifications
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT License
+
+## Author
+
+TestAg Systems - Laravel Test Project

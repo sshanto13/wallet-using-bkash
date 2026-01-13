@@ -12,71 +12,28 @@ use Illuminate\Support\Facades\Cache;
 
 class BkashCallbackController extends Controller
 {
-    public function agreementCallback1(Request $request, BkashService $bkash)
-    {
-        /**
-         * bKash sends:
-         * - paymentID
-         * - status
-         */
-
-        if ($request->status !== 'success') {
-            return response()->json([
-                'message' => 'Agreement cancelled'
-            ], 400);
-        }
-
-        return DB::transaction(function () use ($request, $bkash) {
-
-            // 1️⃣ Execute agreement
-            $response = $bkash->executeAgreement($request->paymentID);
-
-            if (($response['statusCode'] ?? null) !== '0000') {
-                abort(500, 'Agreement execution failed');
-            }
-
-            // 2️⃣ Prevent duplicate wallet
-            $existing = Wallet::where('token', $response['agreementID'])->first();
-            if ($existing) {
-                return response()->json([
-                    'message' => 'Wallet already bound',
-                    'wallet' => $existing
-                ]);
-            }
-
-            // 3️⃣ Save wallet
-            $wallet = Wallet::create([
-                'user_id' => 1, // sandbox TEMP (we bind properly later)
-                'token'   => $response['agreementID'],
-                'masked'  => $response['payerReference'] ?? '019****XXX',
-                'balance' => 0,
-            ]);
-
-            return response()->json([
-                'message' => 'Wallet bound successfully',
-                'wallet'  => $wallet
-            ]);
-        });
-    }
-    
     /**
      * Handle bKash agreement callback (for wallet binding)
      */
     public function agreementCallback(Request $request, BkashService $bkash)
     {
         if ($request->status !== 'success') {
-            return response()->json(['message' => 'Agreement cancelled'], 400);
+            // Return HTML page for cancelled/failed agreement
+            return response()->view('bkash.callback-error', [
+                'message' => 'Agreement cancelled or failed',
+                'redirectUrl' => url('/wallet')
+            ], 400);
         }
 
         return DB::transaction(function () use ($request, $bkash) {
-            // 1️⃣ Get user_id from cache (stored during bind)
+            // Get user_id from cache (stored during bind)
             $userId = Cache::get('agreement_user_' . $request->paymentID);
             
             if (!$userId) {
                 abort(400, 'Invalid or expired agreement request');
             }
 
-            // 2️⃣ Execute agreement
+            // Execute agreement
             $response = $bkash->executeAgreement($request->paymentID);
 
             if (($response['statusCode'] ?? null) !== '0000') {
@@ -97,7 +54,7 @@ class BkashCallbackController extends Controller
                 abort(500, 'Agreement ID not found in response');
             }
 
-            // 3️⃣ Find existing wallet by payment_id (created during bind)
+            // Find existing wallet by payment_id (created during bind)
             $wallet = Wallet::where('payment_id', $request->paymentID)
                 ->where('user_id', $userId)
                 ->first();
@@ -111,7 +68,7 @@ class BkashCallbackController extends Controller
                 abort(404, 'Wallet not found for this agreement');
             }
 
-            // 4️⃣ Validate agreementID before storing
+            //  Validate agreementID before storing
             // Check both camelCase and uppercase variants
             $agreementID = $response['agreementID'] ?? $response['agreementId'] ?? null;
             
@@ -134,7 +91,7 @@ class BkashCallbackController extends Controller
             // Get payerAccount or payerReference (bKash may return either)
             $payerAccount = $response['payerAccount'] ?? $response['payerReference'] ?? $wallet->payer_reference;
             
-            // 5️⃣ Update wallet with final agreementID (will be encrypted at rest)
+            //  Update wallet with final agreementID (will be encrypted at rest)
             // This ID is the master key for future charges
             $wallet->update([
                 'agreement_id' => $agreementID, // Store final agreementId
@@ -154,12 +111,17 @@ class BkashCallbackController extends Controller
                 'agreement_status' => $wallet->agreement_status,
             ]);
 
-            // 7️⃣ Clear cache
+            // Clear cache
             Cache::forget('agreement_user_' . $request->paymentID);
 
-            return response()->json([
+            // Return HTML page that closes popup and redirects to wallet dashboard
+            // This will be shown in the popup window opened by bKash
+            $redirectUrl = url('/wallet');
+            
+            return response()->view('bkash.callback-success', [
                 'message' => 'Wallet bound successfully',
-                'wallet'  => $wallet
+                'redirectUrl' => $redirectUrl,
+                'wallet' => $wallet
             ]);
         });
     }
